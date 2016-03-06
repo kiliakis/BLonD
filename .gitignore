@@ -1,0 +1,12 @@
+*.pyc
+
+*.project
+
+*.pydevproject
+
+result.dll
+result.so
+
+/__doc/build/
+
+
