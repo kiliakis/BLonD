@@ -22,103 +22,6 @@ from scipy.constants import c
 import matplotlib.pyplot as plt
 
 
-class FullRingAndRF(object):
-    '''
-    *Definition of the full ring and RF parameters in order to be able to have
-    a full turn information (used in the hamiltonian for example).*
-    '''
-    
-    def __init__(self, RingAndRFSection_list):
-        
-        #: *List of the total RingAndRFSection objects*
-        self.RingAndRFSection_list = RingAndRFSection_list
-        
-        #: *Total potential well in [V]*
-        self.potential_well = 0
-        
-        #: *Total potential well theta coordinates in [rad]*
-        self.potential_well_coordinates = 0
-        
-        #: *Ring circumference in [m]*
-        self.ring_circumference = 0
-        for RingAndRFSectionElement in self.RingAndRFSection_list:
-            self.ring_circumference += RingAndRFSectionElement.section_length
-            
-        #: *Ring radius in [m]*
-        self.ring_radius = self.ring_circumference / (2*np.pi)
-        
-        
-        
-    def potential_well_generation(self, turn = 0, n_points = 1e5, 
-                                  main_harmonic_option = 'lowest_freq', 
-                                  dt_margin_percent = 0.):
-        '''
-        *Method to generate the potential well out of the RF systems. The 
-        assumption made is that all the RF voltages are averaged over
-        one turn. The potential well is then approximated over one turn,
-        which is not the exact potential. This approximation should be
-        fine enough to generate a bunch (the mismatch should be small and
-        damped fast enough). The default main harmonic is defined to be the
-        lowest one in frequency. The user can change this option if it is
-        not the case for his simulations (other options are: 'highest_voltage',
-        or inputing directly the value of the desired main harmonic). 
-        A margin on the time array can be applied in order
-        to be able to see the min/max that might be exactly on the edges of the
-        frame (by adding a % to the length of the frame, this is set to 0 by default. 
-        It assumes also that the slippage factor is the same in the whole ring.*
-        '''
-        
-        voltages = np.array([])
-        omega_rf = np.array([])
-        phi_offsets = np.array([])
-                 
-        for RingAndRFSectionElement in self.RingAndRFSection_list:
-            charge = RingAndRFSectionElement.charge
-            for rf_system in range(RingAndRFSectionElement.n_rf):
-                voltages = np.append(voltages, RingAndRFSectionElement.voltage[rf_system, turn])
-                omega_rf = np.append(omega_rf, RingAndRFSectionElement.omega_RF[rf_system, turn])
-                phi_offsets = np.append(phi_offsets, RingAndRFSectionElement.phi_RF[rf_system, turn])
-                        
-        voltages = np.array(voltages, ndmin = 2)
-        omega_rf = np.array(omega_rf, ndmin = 2)
-        phi_offsets = np.array(phi_offsets, ndmin = 2)
-        
-        if main_harmonic_option is 'lowest_freq':
-            main_omega_rf = np.min(omega_rf)
-        elif main_harmonic_option is 'highest_voltage':
-            main_omega_rf = np.min(omega_rf[voltages == np.max(voltages)])
-        elif isinstance(main_harmonic_option, int) or isinstance(main_harmonic_option, float):
-            if omega_rf[omega_rf == main_harmonic_option].size == 0:
-                raise RuntimeError('The desired harmonic to compute the potential well does not match the RF parameters...')
-            main_omega_rf = np.min(omega_rf[omega_rf == main_harmonic_option])
-            
-        time_array_margin = dt_margin_percent * 2 * np.pi/main_omega_rf
-        slippage_factor = self.RingAndRFSection_list[0].eta_0[turn]
-        
-        first_dt = - time_array_margin / 2
-        last_dt = 2 * np.pi/main_omega_rf + time_array_margin / 2
-            
-        time_array = np.linspace(first_dt, last_dt, n_points)
-                
-        total_voltage = np.sum(voltages.T * np.sin(omega_rf.T * time_array + phi_offsets.T), axis = 0)
-        
-        eom_factor_potential = np.sign(slippage_factor) * charge / (RingAndRFSectionElement.t_rev[turn])
-        
-        potential_well = - np.insert(cumtrapz(eom_factor_potential * (total_voltage - (-RingAndRFSectionElement.acceleration_kick[turn])/abs(charge)), dx=time_array[1]-time_array[0]),0,0)
-        potential_well = potential_well - np.min(potential_well)
-        
-        self.potential_well_coordinates = time_array
-        self.potential_well = potential_well
-        
-        
-    def track(self):
-        '''
-        *Loops over all the RingAndRFSection.track methods.*
-        '''
-        
-        for RingAndRFSectionElement in self.RingAndRFSection_list:
-            RingAndRFSectionElement.track()
-
 
 
 class RingAndRFSection(object):
@@ -151,12 +54,6 @@ class RingAndRFSection(object):
         #: *Import of Beam object*
         self.beam = Beam
         
-        #: *Import PhaseLoop object*                
-        self.PL = PhaseLoop   
-        
-        #: *Import NoiseFB object*                
-        self.noiseFB = NoiseFB
-
         ### Import RF section parameters #######################################
         #: *Import section index (from RFSectionParameters)*        
         self.section_index = RFSectionParameters.section_index
@@ -250,15 +147,8 @@ class RingAndRFSection(object):
             self.t_rev = np.append(self.t_rev, self.t_rev[-1])
             
         # Use interpolate to apply kick
-        self.rf_kick_interp = rf_kick_interp
-        self.slices = Slices
-        self.TotalInducedVoltage = TotalInducedVoltage
         self.n_threads = n_threads
-        
-        if self.rf_kick_interp and self.slices is None:
-            raise RuntimeError('ERROR: A slices object is needed in the RingAndRFSection to use the kick_interp option')
-        
-    
+            
     def set_periodicity(self):
         
         # Check the periodicity loop invariant dt>=0.
@@ -333,27 +223,6 @@ class RingAndRFSection(object):
             ctypes.c_int(self.n_threads))
 
 
-    def rf_voltage_calculation(self, turn, Slices):
-        '''
-        *Calculating the RF voltage seen by the beam at a given turn, needs a Slices object.
-        '''
-        
-        voltages = np.array([])
-        omega_rf = np.array([])
-        phi_RF = np.array([])
-        
-        for rf_system in range(self.n_rf):
-                voltages = np.append(voltages, self.voltage[rf_system, turn])
-                omega_rf = np.append(omega_rf, self.omega_RF[rf_system, turn])
-                phi_RF = np.append(phi_RF, self.phi_RF[rf_system, turn])
-                        
-        voltages = np.array(voltages, ndmin = 2)
-        omega_rf = np.array(omega_rf, ndmin = 2)
-        phi_RF = np.array(phi_RF, ndmin = 2)
-        
-        self.rf_voltage = np.sum(voltages.T * np.sin(omega_rf.T * Slices.bin_centers + phi_RF.T), axis = 0)
-        
-                
     def track(self):
         '''
         *Tracking method for the section. Applies first the kick, then the 
@@ -362,20 +231,7 @@ class RingAndRFSection(object):
         variables of the Beam class.*
         '''
         
-        # Add phase noise directly to the cavity RF phase
-        if self.phi_noise != None:
-            if self.noiseFB != None:
-                self.phi_RF[:,self.counter[0]] += \
-                    self.noiseFB.x*self.phi_noise[:,self.counter[0]]
-            else:
-                self.phi_RF[:,self.counter[0]] += \
-                    self.phi_noise[:,self.counter[0]]
-
-        # Determine phase loop correction on RF phase and frequency
-        if self.PL != None and self.counter[0]>=self.PL.delay:
-            self.PL.track()  
-        
-        if self.periodicity:
+         if self.periodicity:
             
             # Change reference of all the particles on the right of the current
             # frame; these particles skip one kick and drift
@@ -420,23 +276,7 @@ class RingAndRFSection(object):
                 
         else:
             
-            if self.rf_kick_interp:
-                self.rf_voltage_calculation(self.counter[0], self.slices)
-                if self.TotalInducedVoltage is not None:
-                    self.total_voltage = self.rf_voltage + self.TotalInducedVoltage.induced_voltage
-                else:
-                    self.total_voltage = self.rf_voltage
-                libfib.linear_interp_kick(self.beam.dt.ctypes.data_as(ctypes.c_void_p),
-                                  self.beam.dE.ctypes.data_as(ctypes.c_void_p), 
-                                  (self.beam.charge * self.total_voltage).ctypes.data_as(ctypes.c_void_p), 
-                                  self.slices.bin_centers.ctypes.data_as(ctypes.c_void_p), 
-                                  ctypes.c_int(self.slices.n_slices),
-                                  ctypes.c_int(self.beam.n_macroparticles),
-                                  ctypes.c_double(self.acceleration_kick[self.counter[0]]),
-                                  ctypes.c_int(self.n_threads))
-                
-            else:
-                self.kick(self.beam.dt, self.beam.dE, self.counter[0])
+            self.kick(self.beam.dt, self.beam.dE, self.counter[0])
             
             self.drift(self.beam.dt, self.beam.dE, self.counter[0]+1)
             
