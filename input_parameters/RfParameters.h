@@ -127,33 +127,26 @@ RfParameters::RfParameters(GeneralParameters *_gp, int _n_rf, ftype *_harmonic,
 }
 	
 	// TODO what is this beam.beta, beam.energy thing?
-//ftype RfParameters::eta_tracking(Beams beam, int counter, dE){
+	// TODO maybe I should add some functions about this
+ftype RfParameters::eta_tracking(Beams beam, int counter,ftype dE){
+	if (gp->alpha_order == 1)
+		return eta_0(counter);
+	else{
+		ftype eta = 0;
+		ftype delta = dE / ((beam->gp->beta[0][0])*(beam->gp->beta[0][0])*
+					beam->gp->energy[0][0]);
+	eta += eta_0(counter) * 1;
+	if (alpha_order > 0)
+		eta += eta_1(counter) * delta;
+	if (alpha_order > 1)
+		eta += eta_2(counter) * delta*delta;
+	if (alpha_order > 2)
+		dprintf(
+				"WARNING: Momentum compaction factor is implemented only up to 2nd order");
+	}
+	return eta;
 
 }
-/*
- 
- def eta_tracking(self, beam, counter, dE):
- '''
- *The slippage factor is calculated as a function of the energy offset
- (dE) of the beam particle. By definition, the slippage factor in ith 
- order is:*
- 
- .. math:: 
- \\eta(\\delta) = \\sum_{i}(\\eta_i \\, \\delta^i) = \\sum_{i} \\left(\\eta_i \\, \\left[ \\frac{\\Delta E}{\\beta_s^2 E_s} \\right]^i \\right)
- 
- '''
- 
- if self.alpha_order == 1:
- return self.eta_0[counter]
- else:
- eta = 0
- delta = dE/(beam.beta**2 * beam.energy)
- for i in xrange( self.alpha_order ):
- eta_i = getattr(self, 'eta_' + str(i))[counter]
- eta  += eta_i * (delta**i)
- return eta  
-
- */
 
 ftype RfParameters::eta_0(const int i) {
 	return gp->eta_0[section_index * (gp->n_turns + 1) + i];
