@@ -20,6 +20,10 @@ public:
 	ftype phi_s;
 	ftype *Qs;
 	ftype *omega_s0;
+	ftype *omega_RF_d;
+	ftype *phi_rf;
+	ftype *dphi_RF;
+	ftype *dphi_RF_steering;
 private:
 	ftype eta_0(const int i);
 	ftype eta_1(const int i);
@@ -36,6 +40,7 @@ private:
 	ftype *phi_offset;
 	ftype *phi_noise;
 	ftype *omega_rf;
+	frype *omega_RF;
 	int section_index;
 };
 
@@ -98,33 +103,34 @@ RfParameters::RfParameters(GeneralParameters *_gp, int _n_rf, ftype *_harmonic,
 		this->omega_s0[i] = Qs[i] * gp->omega_rev;
 	}
 
-	// TODO this where I should continue
+	this->omega_RF_d = new ftype[n_rf*(gp->n_turns+1)];
+	for (int i = 0; i < n_rf * (gp->n_turns + 1); ++i) {
+		this->omega_RF_d[i] = 2*pi*gp->beta[i] * harmonic[i]/ gp->ring_circumference;
+	}
+
+	this->omega_RF = new ftype[n_rf *(gp->n_turns +1)];
+	if (omega_rf == NULL){
+		std::copy(std::begin(omega_RF_d), std::end(omega_RF_d), omega_RF);
+	}
+
+	this->phi_RF = new ftype[n_rf *(gp->n_turns +1)];
+	std::copy(std::begin(phi_offset), std::end(phi_offset), phi_RF);
+
+	this->dphi_RF = new ftype[n_rf];
+	std::fill_n(dphi_RF, n_rf, 0);
+
+	this->dphi_RF_steering = new ftype[n_rf];
+	std::fill_n(dphi_RF_steering, n_rf, 0);
+
+	// TODO probably this is an array
+	this->t_RF = 2*pi / omega_RF[0];
 }
+	
+	// TODO what is this beam.beta, beam.energy thing?
+//ftype RfParameters::eta_tracking(Beams beam, int counter, dE){
 
+}
 /*
- 
-
- #: *Design RF frequency of the RF systems in the station [Hz]*        
- self.omega_RF_d = 2.*np.pi*self.beta*c*self.harmonic/ \
-                          (self.ring_circumference)
- 
- #: *Initial, actual RF frequency of the RF systems in the station [Hz]*
- if omega_rf == None:
- self.omega_RF = np.array(self.omega_RF_d)                  
-
- #: *Initial, actual RF phase of each harmonic system*
- self.phi_RF = np.array(self.phi_offset) 
- 
- #: *Accumulated RF phase error of each harmonic system*
- self.dphi_RF = np.zeros(self.n_rf)
- 
- #: *Accumulated RF phase error of each harmonic system*
- self.dphi_RF_steering = np.zeros(self.n_rf)
- 
- self.t_RF = 2*np.pi / self.omega_RF[0]
- 
- 
- 
  
  def eta_tracking(self, beam, counter, dE):
  '''
