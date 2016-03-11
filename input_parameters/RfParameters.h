@@ -147,7 +147,7 @@ RfParameters::RfParameters(GeneralParameters *_gp, Beams *beam, int _n_rf,
 
 // TODO what is this beam.beta, beam.energy thing?
 // TODO maybe I should add some functions about this
-ftype RfParameters::eta_tracking(const Beams *beam, const int counter,
+inline ftype RfParameters::eta_tracking(const Beams *beam, const int counter,
 		const ftype dE) {
 	ftype eta = 0;
 	if (gp->alpha_order == 1)
@@ -200,7 +200,7 @@ inline ftype RfParameters::momentum(const int i) {
 
 }
 
-int RfParameters::sign_eta_0(const int i) {
+inline int RfParameters::sign_eta_0(const int i) {
 	if (gp->eta_0[section_index * (gp->n_turns + 1) + i] > 0)
 		return 1;
 	else if (gp->eta_0[section_index * (gp->n_turns + 1) + i] == 0)

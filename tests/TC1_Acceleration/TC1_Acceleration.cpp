@@ -9,6 +9,7 @@
 #include "../../input_parameters/GeneralParameters.h"
 #include "../../input_parameters/RfParameters.h"
 #include "../../beams/Beams.h"
+#include "../../trackers/Tracker.h"
 
 #include <stdio.h>
 
@@ -70,6 +71,9 @@ int main(int argc, char **argv) {
 	Beams *beam = new Beams(general_params, N_p, N_b);
 	RfParameters *rf_params = new RfParameters(general_params, beam, n_sections,
 			h_array, V_array, dphi_array);
+
+	RingAndRfSection *long_tracker = new RingAndRfSection(general_params,
+			rf_params, beam);
 	//dump(rf_params->E_increment, n_sections * (N_t), "E_increment");
 	//dump(rf_params->Qs, n_sections * (N_t + 1), "Qs");
 	//dump(rf_params->omega_RF_d, n_sections * (N_t + 1), "omega_RF_d");

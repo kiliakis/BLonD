@@ -60,7 +60,7 @@ public:
 
 };
 
-void GeneralParameters::eta_generation() {
+inline void GeneralParameters::eta_generation() {
 	_eta0();
 	if (alpha_order > 0)
 		_eta1();
@@ -71,7 +71,7 @@ void GeneralParameters::eta_generation() {
 				"WARNING: Momentum compaction factor is implemented only up to 2nd order");
 }
 
-void GeneralParameters::_eta0() {
+inline void GeneralParameters::_eta0() {
 	eta_0 = new ftype[n_sections * (n_turns + 1)];
 	// TODO expand this approach to all the code
 	for (int i = 0; i < n_sections * (n_turns + 1); ++i) {
@@ -187,7 +187,7 @@ GeneralParameters::GeneralParameters(const int _n_turns, ftype* _ring_length,
 
 	//TODO assuming momentum is a 2d array
 	//this->t_rev = new ftype[n_turns + 1];
-	std::fill_n(t_rev, (n_turns + 1), 0);
+	std::fill(t_rev.begin(), t_rev.end(), 0);
 
 	for (int j = 0; j < n_turns + 1; ++j)
 		for (int k = 0; k < n_sections; ++k) {

@@ -18,7 +18,6 @@ class Beams {
 public:
 	ftype *dt;
 	ftype *dE;
-	ftype *insiders_dt;
 	ftype mean_dt;
 	ftype mean_dE;
 	ftype sigma_dt;
@@ -26,6 +25,8 @@ public:
 	ftype ratio;
 	ftype epsn_rms_l;
 	int n_macroparticles_lost;
+	int n_macroparticles;
+
 	GeneralParameters *gp;
 	int *id;
 	Beams(GeneralParameters *gp, int _n_macroparticles, int _intensity);
@@ -34,7 +35,6 @@ public:
 	void losses_energy_cut(ftype dE_min, ftype dE_max);
 
 private:
-	int n_macroparticles;
 	int intensity;
 	void statistics();
 };
@@ -45,8 +45,6 @@ Beams::Beams(GeneralParameters *_gp, int _n_macroparticles, int _intensity) {
 	this->n_macroparticles = _n_macroparticles;
 	this->intensity = _intensity;
 	this->dt = new ftype[n_macroparticles];
-	this->insiders_dt = new ftype[n_macroparticles];
-
 	this->dE = new ftype[n_macroparticles];
 	this->mean_dt = this->mean_dE = 0;
 	this->sigma_dt = this->sigma_dE = 0;
@@ -59,12 +57,12 @@ Beams::Beams(GeneralParameters *_gp, int _n_macroparticles, int _intensity) {
 	}
 }
 
-int Beams::n_macroparticles_alive() {
+inline int Beams::n_macroparticles_alive() {
 
 	return n_macroparticles - n_macroparticles_lost;
 }
 
-void Beams::statistics() {
+inline void Beams::statistics() {
 	ftype m_dE, m_dt, s_dE, s_dt;
 	m_dt = m_dE = s_dE = s_dt = 0;
 	int n = 0;
@@ -92,7 +90,7 @@ void Beams::statistics() {
 	n_macroparticles_lost = n_macroparticles - n;
 }
 
-void Beams::losses_longitudinal_cut(ftype dt_min, ftype dt_max) {
+inline void Beams::losses_longitudinal_cut(ftype dt_min, ftype dt_max) {
 	for (int i = 0; i < n_macroparticles; ++i) {
 		ftype a = (dt[i] - dt_min) * (dt_max - dt[i]);
 		if (a < 0)
@@ -100,7 +98,7 @@ void Beams::losses_longitudinal_cut(ftype dt_min, ftype dt_max) {
 	}
 }
 
-void Beams::losses_energy_cut(ftype dE_min, ftype dE_max) {
+inline void Beams::losses_energy_cut(ftype dE_min, ftype dE_max) {
 	for (int i = 0; i < n_macroparticles; ++i) {
 		ftype a = (dE[i] - dE_min) * (dE_max - dE[i]);
 		if (a < 0)
