@@ -26,7 +26,7 @@ import ctypes
 # CHOOSE THE FLAG THAT YOU WANT
 # EXAMPLE FLAGS: -Ofast -std=c++11 -fopt-info-vec
 #                -mfma4 -fopenmp
-flags = '-Ofast -std=c++11 -fopt-info-vec' #-ftree-vectorizer-verbose=1' #-fopt-info-vec'
+flags = '-Ofast -std=c++11 -fopt-info-vec' #'-ftree-vectorizer-verbose=1' #-fopt-info-vec'
 
 
 # CHOOSE THE cpp FILES THAT YOU WANT TO COMPILE

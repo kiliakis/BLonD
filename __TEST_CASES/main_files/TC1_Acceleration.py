@@ -64,7 +64,7 @@ beam = Beam(general_params, N_p, N_b)
 
 
 # Define RF station parameters and corresponding tracker
-rf_params = RFSectionParameters(general_params, 1, h, V, dphi)
+rf_params = RFSectionParameters(general_params, 2, [h,2*h], [V, 1.001*V], [dphi, 1.001*dphi] )
 long_tracker = RingAndRFSection(rf_params, beam)
 
 longitudinal_bigaussian(general_params, rf_params, beam, tau_0/4, 
