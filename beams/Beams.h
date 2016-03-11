@@ -5,16 +5,20 @@
  *      Author: kiliakis
  */
 
+#include "../input_parameters/GeneralParameters.h"
+
+#include "../includes/utilities.h"
+
 #ifndef BEAMS_BEAMS_H_
 #define BEAMS_BEAMS_H_
 
-#include "../input_parameters/GeneralParameters.h"
-#include "../includes/utilities.h"
+//#include "../includes/globals.h"
 
 class Beams {
 public:
 	ftype *dt;
 	ftype *dE;
+	ftype *insiders_dt;
 	ftype mean_dt;
 	ftype mean_dE;
 	ftype sigma_dt;
@@ -22,14 +26,14 @@ public:
 	ftype ratio;
 	ftype epsn_rms_l;
 	int n_macroparticles_lost;
+	GeneralParameters *gp;
 	int *id;
-	Beams(GeneralParameters *_gp, int _n_macroparticles, int _intensity);
+	Beams(GeneralParameters *gp, int _n_macroparticles, int _intensity);
 	int n_macroparticles_alive();
 	void losses_longitudinal_cut(ftype dt_min, ftype dt_max);
 	void losses_energy_cut(ftype dE_min, ftype dE_max);
 
 private:
-	GeneralParameters *gp;
 	int n_macroparticles;
 	int intensity;
 	void statistics();
@@ -41,6 +45,8 @@ Beams::Beams(GeneralParameters *_gp, int _n_macroparticles, int _intensity) {
 	this->n_macroparticles = _n_macroparticles;
 	this->intensity = _intensity;
 	this->dt = new ftype[n_macroparticles];
+	this->insiders_dt = new ftype[n_macroparticles];
+
 	this->dE = new ftype[n_macroparticles];
 	this->mean_dt = this->mean_dE = 0;
 	this->sigma_dt = this->sigma_dE = 0;

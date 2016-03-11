@@ -5,12 +5,13 @@
  *      Author: kiliakis
  */
 
-#ifndef INCLUDES_UTILITIES_H_
-#define INCLUDES_UTILITIES_H_
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "configuration.h"
+
+#ifndef INCLUDES_UTILITIES_H_
+#define INCLUDES_UTILITIES_H_
 
 #define dprintf(...)    fprintf(stdout, __VA_ARGS__)     // Debug printf
 
@@ -26,16 +27,20 @@ ftype *linspace(const ftype start, const ftype end, const int n) {
 }
 
 void dump(ftype* a, int n, const char* s) {
+	dprintf("\n");
 	for (int i = 0; i < n; ++i) {
 		dprintf("%s[%d] = %.8lf\n", s, i, a[i]);
 	}
+	dprintf("\n");
 
 }
 
 void dump(int* a, int n, const char* s) {
+	dprintf("\n");
 	for (int i = 0; i < n; ++i) {
 		dprintf("%s[%d] = %d\n", s, i, a[i]);
 	}
+	dprintf("\n");
 
 }
 

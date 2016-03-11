@@ -5,9 +5,11 @@
  *      Author: kiliakis
  */
 
-#include "../../input_parameters/GeneralParameters.h"
-#include "../../beams/Beams.h"
 #include "../../includes/utilities.h"
+#include "../../input_parameters/GeneralParameters.h"
+#include "../../input_parameters/RfParameters.h"
+#include "../../beams/Beams.h"
+
 #include <stdio.h>
 
 // Simulation parameters --------------------------------------------------------
@@ -32,40 +34,51 @@ const int N_t = 1e6;    // Number of turns to track
 
 // Simulation setup -------------------------------------------------------------
 int main(int argc, char **argv) {
+	/// initializations
+	printf("Setting up the simulation...\n\n");
+
+	// TODO maybe we can change the way linspace works (take an array an initialize it)
 	ftype *momentum = linspace(p_i, p_f, N_t + 1);
+
 	ftype *alpha_array = new ftype[(alpha_order + 1) * n_sections];
 	std::fill_n(alpha_array, (alpha_order + 1) * n_sections, alpha);
-	// printf("Setting up the simulation...\n\n");
+
 	ftype *C_array = new ftype[n_sections];
 	C_array[0] = C;
+
+	ftype *h_array = new ftype[n_sections * (N_t + 1)];
+	std::fill_n(h_array, (N_t + 1) * n_sections, h);
+
+	ftype *V_array = new ftype[n_sections * (N_t + 1)];
+	std::fill_n(V_array, (N_t + 1) * n_sections, V);
+
+	ftype *dphi_array = new ftype[n_sections * (N_t + 1)];
+	std::fill_n(dphi_array, (N_t + 1) * n_sections, dphi);
+
 	// printf("alpha = %lf\n", alpha);
 
 	// TODO variables must be in the correct format (arrays for all)
-	GeneralParameters general_params = GeneralParameters(N_t, C_array,
+	GeneralParameters *general_params = new GeneralParameters(N_t, C_array,
 			alpha_array, alpha_order, momentum, proton);
-	// printf("mass = %lf\n", general_params.mass);
-	// dump(momentum, N_t + 1, "momentum");
 
 	// dump(general_params.gamma, N_t + 1, "gamma");
-	printf("eta_0[0] = %.8lf\n", general_params.eta_0[0]);
-	printf("eta_0[last] = %.8lf\n", general_params.eta_0[N_t]);
+	//printf("eta_0[0] = %.8lf\n", general_params->eta_0[0]);
+	//printf("eta_0[last] = %.8lf\n", general_params->eta_0[N_t]);
 
-	Beams beam = Beams(&general_params, N_p, N_b);
+	// TODO maybe general_params, beam, and RfParameters could be global?
+
+	Beams *beam = new Beams(general_params, N_p, N_b);
+	RfParameters *rf_params = new RfParameters(general_params, beam, n_sections,
+			h_array, V_array, dphi_array);
+	//dump(rf_params->E_increment, n_sections * (N_t), "E_increment");
+	//dump(rf_params->Qs, n_sections * (N_t + 1), "Qs");
+	//dump(rf_params->omega_RF_d, n_sections * (N_t + 1), "omega_RF_d");
 	//dump(general_params.eta_0, N_t + 1, "eta_0");
-	//printf("Done!");
+	printf("Done!");
 
 }
 
-// Define general parameters
-//GeneralParameters general_params = GeneralParameters(N_t, C, alpha,
-//	np.linspace(p_i, p_f, 2001), 'proton');
-
 /*
- // Define beam and distribution
- beam = Beam(general_params, N_p, N_b)
-
- // Define RF station parameters and corresponding tracker
- rf_params = RFSectionParameters(general_params, 1, h, V, dphi)
  long_tracker = RingAndRFSection(rf_params, beam)
 
  // Accelerator map

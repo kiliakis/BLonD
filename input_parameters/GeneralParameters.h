@@ -5,9 +5,6 @@
  *      Author: kiliakis
  */
 
-#ifndef INPUT_PARAMETERS_GENERALPARAMETERS_H_
-#define INPUT_PARAMETERS_GENERALPARAMETERS_H_
-
 #include "../includes/configuration.h"
 #include <vector>
 #include "../includes/utilities.h"
@@ -15,6 +12,9 @@
 #include <numeric>
 #include <string.h>
 #include "../includes/constants.h"
+
+#ifndef INPUT_PARAMETERS_GENERALPARAMETERS_H_
+#define INPUT_PARAMETERS_GENERALPARAMETERS_H_
 
 enum particle_type {
 	proton, electron, user_input, none
@@ -45,7 +45,8 @@ public:
 	ftype *energy;
 	ftype *kin_energy;
 	ftype* cycle_time;
-	ftype* f_rev, t_rev, omega_rev;
+	ftype* f_rev, *omega_rev;
+	std::vector<ftype> t_rev;
 	// TODO what is the type of f_rev, t_rev, omega_rev??
 	// probably they are arrays
 	ftype *eta_0, *eta_1, *eta_2;
@@ -110,6 +111,8 @@ GeneralParameters::GeneralParameters(const int _n_turns, ftype* _ring_length,
 		particle_type _particle2, ftype user_mass_2, ftype user_charge_2,
 		int number_of_sections) {
 
+	// TODO make sure this alpha_order thing is right
+
 	this->particle = _particle;
 	this->particle_2 = _particle2;
 	this->n_sections = number_of_sections;
@@ -148,42 +151,19 @@ GeneralParameters::GeneralParameters(const int _n_turns, ftype* _ring_length,
 
 	// We don't have tuple momentum == we don't need cumulative_times
 	// assuming that momentum is a 2d array
-	//this->momentum = new ftype[n_sections * (n_turns + 1)];
-
-	//this->momentum = (ftype *) malloc(
-	//		sizeof(ftype) * (n_turns + 1) * n_sections);
-
-	//memcpy(this->momentum, _momentum,
-	//		(n_turns + 1) * n_sections * sizeof(ftype));
 
 	this->momentum = _momentum;
 
 	this->alpha_order = _alpha_order;
 
-	//this->alpha = new ftype[n_sections * (alpha_order)];
-	//this->alpha = (ftype *) malloc(sizeof(ftype) * n_sections * alpha_order);
-
-	//memcpy(this->alpha, _alpha, (alpha_order) * n_sections * sizeof(ftype));
-
 	this->alpha = _alpha;
 
-	this->ring_length = new ftype[n_sections];
-	//this->ring_length = (ftype *) malloc(sizeof(ftype) * n_sections);
-	memcpy(this->ring_length, _ring_length, sizeof(ftype) * n_sections);
+	this->ring_length = _ring_length;
 
 	this->ring_circumference = std::accumulate(&ring_length[0],
-			&ring_length[n_sections], 0);
+			&ring_length[n_sections], 0.0);
 	this->ring_radius = ring_circumference / (2 * pi);
 
-	// TODO check what is happening with alpha and momentum as well
-	// There is no way this can happen the way we have coded this
-	/*
-	 if ((n_sections != ring_length.size())) {
-	 dprintf(
-	 "ERROR: Number of sections, ring length, alpha, and/or momentum data do not match!");
-	 exit(-1);
-	 }
-	 */
 	if (n_sections > 1) {
 		// TODO do some things inside here
 		// Should ask danilo about this
@@ -206,6 +186,29 @@ GeneralParameters::GeneralParameters(const int _n_turns, ftype* _ring_length,
 	}
 
 	//TODO assuming momentum is a 2d array
+	//this->t_rev = new ftype[n_turns + 1];
+	std::fill_n(t_rev, (n_turns + 1), 0);
+
+	for (int j = 0; j < n_turns + 1; ++j)
+		for (int k = 0; k < n_sections; ++k) {
+			t_rev[j] += ring_length[k] / (beta[k * n_turns + j] * c);
+		}
+
+	this->cycle_time = new ftype[n_turns + 1];
+	cycle_time[0] = t_rev[0];
+	for (int i = 1; i < n_turns + 1; ++i) {
+		cycle_time[i] = t_rev[i] + cycle_time[i - 1];
+	}
+
+	this->f_rev = new ftype[n_turns + 1];
+	for (int i = 0; i < n_turns + 1; ++i) {
+		f_rev[i] = 1 / t_rev[i];
+	}
+
+	this->omega_rev = new ftype[n_turns + 1];
+	for (int i = 0; i < n_turns + 1; ++i) {
+		omega_rev[i] = 2 * pi * f_rev[i];
+	}
 
 	if (alpha_order > 3) {
 		dprintf(
